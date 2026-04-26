@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
@@ -21,18 +25,14 @@ jobs:
           go-version: 1.25
           check-latest: true
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64,s390x
-
       - uses: docker/setup-buildx-action@v3
 
-      - name: Login to DockerHub
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -42,28 +42,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  bump-charts:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Set appVersion
-        uses: mikefarah/yq@v4
-        with:
-          cmd: yq -i '.appVersion = "${{ github.ref_name }}"' 'charts/caddy-ingress-controller/Chart.yaml'
-
-      - name: Set image tag
-        uses: mikefarah/yq@v4
-        with:
-          cmd: yq -i '.image.tag = "${{ github.ref_name }}"' 'charts/caddy-ingress-controller/values.yaml'
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          branch: update-charts
-          commit-message: Update caddy-ingress charts to ${{ github.ref_name }}
-          title: Update caddy-ingress charts to ${{ github.ref_name }}
-          body: |
-            This is an automated pull request to update charts.
