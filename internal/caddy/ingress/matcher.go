@@ -32,7 +32,7 @@ func (p MatcherPlugin) IngressHandler(input converter.IngressMiddlewareInput) (*
 	if input.Path.Path != "" {
 		p := input.Path.Path
 
-		if *input.Path.PathType == v1.PathTypePrefix {
+		if *input.Path.PathType == v1.PathTypePrefix || *input.Path.PathType == v1.PathTypeImplementationSpecific {
 			p += "*"
 		}
 		match["path"] = caddyconfig.JSON(caddyhttp.MatchPath{p}, nil)
